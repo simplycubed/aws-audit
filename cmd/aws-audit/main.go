@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/charlesgreen/aws-audit/internal/awsapi"
 	"github.com/charlesgreen/aws-audit/internal/collect"
@@ -23,7 +24,7 @@ func main() {
 }
 
 func run(args []string) int {
-	opts := collect.Options{Profile: "audit", Parallel: 4}
+	opts := collect.Options{Profile: "audit", Parallel: 4, Formats: []string{"md", "csv", "json"}}
 	listOnly := false
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -76,6 +77,13 @@ func run(args []string) int {
 				return 2
 			}
 			opts.Parallel = n
+		case "--format":
+			v, ok := need()
+			if !ok {
+				fmt.Fprintln(os.Stderr, "error: --format requires md,csv,json")
+				return 2
+			}
+			opts.Formats = splitCSV(v)
 		default:
 			fmt.Fprintf(os.Stderr, "unknown arg: %s (try --help or --list-regions)\n", a)
 			return 2
@@ -107,9 +115,20 @@ func run(args []string) int {
 	return 0
 }
 
+func splitCSV(s string) []string {
+	var out []string
+	for _, p := range strings.Split(s, ",") {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
 func usage() string {
 	return `Usage:
-  aws-audit [--profile NAME] [--regions r1,r2,...] [--out DIR] [--parallel N]
+  aws-audit [--profile NAME] [--regions r1,r2,...] [--out DIR] [--parallel N] [--format md,csv,json]
   aws-audit --list-regions
   aws-audit --version
   aws-audit -h|--help
@@ -119,6 +138,7 @@ func usage() string {
                        account partition; opt-in Regions must already be enabled)
   --out DIR            Output directory (default: ./aws-audit-<account>-<timestamp>)
   --parallel N         Concurrent regional audits (default: 4)
+  --format LIST        Report formats: md, csv, json (default: all three)
   --list-regions       Print valid Region codes and exit (no AWS calls)
   --version            Print version and exit
   -h, --help           Show this help and the valid Region list

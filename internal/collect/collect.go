@@ -14,6 +14,7 @@ import (
 	"github.com/charlesgreen/aws-audit/internal/awsapi"
 	"github.com/charlesgreen/aws-audit/internal/redact"
 	"github.com/charlesgreen/aws-audit/internal/regions"
+	"github.com/charlesgreen/aws-audit/internal/report"
 	"github.com/charlesgreen/aws-audit/internal/summarize"
 )
 
@@ -25,17 +26,21 @@ type Options struct {
 	OutDir       string
 	RequestedCSV string
 	Parallel     int
+	Formats      []string // md, csv, json
 	Client       awsapi.Client
 	Now          time.Time
 }
 
-// Run authenticates, dumps configuration JSON, and writes summary.md.
+// Run authenticates, dumps configuration JSON, and writes reports.
 func Run(ctx context.Context, opts Options) error {
 	if opts.Parallel <= 0 {
 		opts.Parallel = 4
 	}
 	if opts.Now.IsZero() {
 		opts.Now = time.Now().UTC()
+	}
+	if len(opts.Formats) == 0 {
+		opts.Formats = []string{"md", "csv", "json"}
 	}
 	if opts.Client == nil {
 		return fmt.Errorf("AWS client is required")
@@ -117,11 +122,11 @@ func Run(ctx context.Context, opts Options) error {
 	c.auditGlobal(ctx)
 	c.auditRegions(ctx, scanned)
 
-	md, err := summarize.Report(out)
+	rep, err := summarize.Build(out)
 	if err != nil {
-		md = fmt.Sprintf("# AWS Audit Summary\n\nAccount: %s\nSummarizer error: %v\n", id.Account, err)
+		return err
 	}
-	return os.WriteFile(filepath.Join(out, "summary.md"), []byte(md), 0o600)
+	return writeReports(out, rep, opts.Formats)
 }
 
 func discoverRegions(ctx context.Context, cl awsapi.Client, home, part string) (enabled, disabled []string, source string) {
@@ -475,4 +480,34 @@ func writeCredentialCSV(path string, raw json.RawMessage) {
 		return
 	}
 	_ = os.WriteFile(path, b, 0o600)
+}
+
+func writeReports(dir string, rep *report.Report, formats []string) error {
+	for _, f := range formats {
+		switch strings.ToLower(strings.TrimSpace(f)) {
+		case "md", "markdown":
+			if err := os.WriteFile(filepath.Join(dir, "summary.md"), []byte(rep.Markdown()), 0o600); err != nil {
+				return err
+			}
+		case "csv":
+			s, err := rep.CSV()
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(filepath.Join(dir, "summary.csv"), []byte(s), 0o600); err != nil {
+				return err
+			}
+		case "json":
+			b, err := rep.JSONBytes()
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(filepath.Join(dir, "summary.json"), append(b, '\n'), 0o600); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unknown --format %q (use md, csv, json)", f)
+		}
+	}
+	return nil
 }

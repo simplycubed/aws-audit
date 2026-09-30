@@ -122,12 +122,22 @@ func TestDumpFailureWritesEmptyObjectAndErrorLog(t *testing.T) {
 	}
 }
 
-func TestSummaryMarkdownGenerated(t *testing.T) {
+func TestSummaryReportsGenerated(t *testing.T) {
 	fake := &awsapi.Fake{}
 	opts := testOpts(t, fake)
 	opts.RequestedCSV = "eu-west-1"
+	opts.Formats = []string{"md", "csv", "json"}
 	if err := Run(context.Background(), opts); err != nil {
 		t.Fatal(err)
+	}
+	for _, name := range []string{"summary.md", "summary.csv", "summary.json"} {
+		raw, err := os.ReadFile(filepath.Join(opts.OutDir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(raw) == 0 {
+			t.Fatalf("%s empty", name)
+		}
 	}
 	md, err := os.ReadFile(filepath.Join(opts.OutDir, "summary.md"))
 	if err != nil {

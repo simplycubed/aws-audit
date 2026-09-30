@@ -1,14 +1,50 @@
+# If you prefer the allow list template instead of the deny list, see community template:
+# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
+#
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Code coverage profiles and other test artifacts
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# env file
+.env
+.env.*
+
 # Audit dumps contain live account data (IAM, DNS, contacts, secret names,
 # security-group rules, etc.). Never commit them.
 # Leading slash is required: an unanchored aws-audit-*/ also matches
 # cmd/aws-audit-summarize and hides it from git and GoReleaser.
 /aws-audit-*/
 /summary.md
+/summary.csv
+/summary.json
 /errors.log
-.env
-.env.*
 /bin/
 /dist/
 /aws-audit
 /aws-audit-summarize
 
+# Editor/IDE
+# .idea/
+# .vscode/
+
+# macOS
+.DS_Store

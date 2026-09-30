@@ -54,7 +54,7 @@ Common overrides:
 
 ```bash
 aws-audit --profile audit --regions eu-west-1,ap-northeast-1,sa-east-1
-aws-audit --out /tmp/audit-2026-01-01 --parallel 8
+aws-audit --out /tmp/audit-2026-01-01 --parallel 8 --format md,csv,json
 ```
 
 Print every valid Region code (no AWS credentials):
@@ -63,11 +63,15 @@ Print every valid Region code (no AWS credentials):
 aws-audit --list-regions
 ```
 
-Re-run the summary against an existing dump:
+Re-run reports against an existing dump:
 
 ```bash
-aws-audit-summarize ./aws-audit-123456789012-20260101-120000 > /tmp/summary.md
+aws-audit-summarize ./aws-audit-123456789012-20260101-120000 --format md
+aws-audit-summarize ./aws-audit-123456789012-20260101-120000 --format csv
+aws-audit-summarize ./aws-audit-123456789012-20260101-120000 --format json
 ```
+
+Default `--format` on a collection run writes all three: `summary.md`, `summary.csv`, `summary.json`.
 
 `aws-audit --help` lists flags and the Region catalog.
 
@@ -106,6 +110,8 @@ aws-audit-<account>-<UTC-timestamp>/
   meta.json                       # account id, principal, start time
   errors.log                      # every failed API call (esp. AccessDenied)
   summary.md                      # human-readable findings report
+  summary.csv                     # spreadsheet/GRC export
+  summary.json                    # machine-readable findings
   global/
     iam/                          # users, roles, policies, credential report, per-user details
     organizations/                # org structure, SCPs

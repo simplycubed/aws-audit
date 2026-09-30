@@ -8,17 +8,18 @@ import (
 )
 
 func TestMissingDumpDir(t *testing.T) {
-	_, err := Report("/no/such/dump")
+	_, err := Build("/no/such/dump")
 	if err == nil {
 		t.Fatal("expected error")
 	}
 }
 
 func TestFindingsFromFixture(t *testing.T) {
-	md, err := Report(filepath.Join("testdata", "sample"))
+	rep, err := Build(filepath.Join("testdata", "sample"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	md := rep.Markdown()
 	needles := []string{
 		"Account 123456789012",
 		"HIGH: Root account MFA disabled",
@@ -39,6 +40,22 @@ func TestFindingsFromFixture(t *testing.T) {
 	if strings.Contains(md, "supersecret") {
 		t.Error("fixture must not contain live secrets")
 	}
+
+	csv, err := rep.CSV()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(csv, "aws,123456789012,HIGH,Root account MFA disabled") {
+		t.Fatalf("csv missing root MFA finding:\n%s", csv)
+	}
+
+	js, err := rep.JSONBytes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(js), `"cloud": "aws"`) {
+		t.Fatalf("json: %s", js)
+	}
 }
 
 func TestEmptyErrorsOmitsSection(t *testing.T) {
@@ -47,11 +64,11 @@ func TestEmptyErrorsOmitsSection(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "errors.log"), nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	md, err := Report(dir)
+	rep, err := Build(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(md, "Permission / API Errors") {
+	if strings.Contains(rep.Markdown(), "Permission / API Errors") {
 		t.Fatal("empty errors.log should not produce the errors section")
 	}
 }
