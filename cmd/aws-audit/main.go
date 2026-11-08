@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charlesgreen/aws-audit/internal/awsapi"
-	"github.com/charlesgreen/aws-audit/internal/collect"
-	"github.com/charlesgreen/aws-audit/internal/regions"
+	"github.com/simplycubed/aws-audit/internal/awsapi"
+	"github.com/simplycubed/aws-audit/internal/collect"
+	"github.com/simplycubed/aws-audit/internal/regions"
 )
 
 // Set by GoReleaser ldflags.

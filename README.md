@@ -2,22 +2,22 @@
 
 Read-only CLI that snapshots AWS account configuration and writes a findings report. Use it for monthly security reviews and as evidence toward ISO 27001 and SOC 2 technical controls.
 
-Implemented in Go with AWS SDK v2. Sibling tool: [gcp-audit](https://github.com/charlesgreen/gcp-audit).
+Implemented in Go with AWS SDK v2. Sibling tool: [gcp-audit](https://github.com/simplycubed/gcp-audit).
 
 ## Install
 
-From a [GitHub Release](https://github.com/charlesgreen/aws-audit/releases) (Linux amd64; replace the version):
+From a [GitHub Release](https://github.com/simplycubed/aws-audit/releases) (Linux amd64; replace the version):
 
 ```bash
-curl -L https://github.com/charlesgreen/aws-audit/releases/download/v0.1.0/aws-audit_0.1.0_Linux_x86_64.tar.gz | tar xz
+curl -L https://github.com/simplycubed/aws-audit/releases/download/v0.1.0/aws-audit_0.1.0_Linux_x86_64.tar.gz | tar xz
 sudo mv aws-audit aws-audit-summarize /usr/local/bin/
 ```
 
 From source:
 
 ```bash
-go install github.com/charlesgreen/aws-audit/cmd/aws-audit@latest
-go install github.com/charlesgreen/aws-audit/cmd/aws-audit-summarize@latest
+go install github.com/simplycubed/aws-audit/cmd/aws-audit@latest
+go install github.com/simplycubed/aws-audit/cmd/aws-audit-summarize@latest
 ```
 
 A `v*` tag on `main` runs [GoReleaser](https://goreleaser.com) and publishes archives, checksums, and SBOMs.

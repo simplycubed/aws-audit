@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charlesgreen/aws-audit/internal/report"
+	"github.com/simplycubed/aws-audit/internal/report"
 )
 
 // Build reads an aws-audit dump directory and returns a portable report.

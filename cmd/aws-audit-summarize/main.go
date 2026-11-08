@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charlesgreen/aws-audit/internal/summarize"
+	"github.com/simplycubed/aws-audit/internal/summarize"
 )
 
 // Set by GoReleaser ldflags.

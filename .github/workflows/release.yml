@@ -85,7 +85,7 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG#v}"
           ARCHIVE="aws-audit_${VERSION}_${{ matrix.archive }}"
-          BASE="https://github.com/charlesgreen/aws-audit/releases/download/${TAG}"
+          BASE="https://github.com/simplycubed/aws-audit/releases/download/${TAG}"
 
           curl -fsSL -o "${ARCHIVE}" "${BASE}/${ARCHIVE}"
           curl -fsSL -o checksums.txt "${BASE}/checksums.txt"
@@ -108,7 +108,7 @@ jobs:
           $tag = "${{ github.ref_name }}"
           $version = $tag.TrimStart('v')
           $archive = "aws-audit_${version}_${{ matrix.archive }}"
-          $base = "https://github.com/charlesgreen/aws-audit/releases/download/${tag}"
+          $base = "https://github.com/simplycubed/aws-audit/releases/download/${tag}"
 
           Invoke-WebRequest -Uri "$base/$archive" -OutFile $archive
           Invoke-WebRequest -Uri "$base/checksums.txt" -OutFile checksums.txt

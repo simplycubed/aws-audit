@@ -88,7 +88,7 @@ changelog:
 
 release:
   github:
-    owner: charlesgreen
+    owner: simplycubed
     name: aws-audit
   draft: false
   prerelease: auto
@@ -105,19 +105,19 @@ release:
 
     ```bash
     # Linux amd64
-    curl -L https://github.com/charlesgreen/aws-audit/releases/download/{{.Tag}}/aws-audit_{{.Version}}_Linux_x86_64.tar.gz | tar xz
+    curl -L https://github.com/simplycubed/aws-audit/releases/download/{{.Tag}}/aws-audit_{{.Version}}_Linux_x86_64.tar.gz | tar xz
     sudo mv aws-audit aws-audit-summarize /usr/local/bin/
     ```
 
     Or from source:
 
     ```bash
-    go install github.com/charlesgreen/aws-audit/cmd/aws-audit@{{.Tag}}
-    go install github.com/charlesgreen/aws-audit/cmd/aws-audit-summarize@{{.Tag}}
+    go install github.com/simplycubed/aws-audit/cmd/aws-audit@{{.Tag}}
+    go install github.com/simplycubed/aws-audit/cmd/aws-audit-summarize@{{.Tag}}
     ```
 
     ---
-    **Full Changelog**: https://github.com/charlesgreen/aws-audit/compare/{{.PreviousTag}}...{{.Tag}}
+    **Full Changelog**: https://github.com/simplycubed/aws-audit/compare/{{.PreviousTag}}...{{.Tag}}
 
 sboms:
   - artifacts: archive

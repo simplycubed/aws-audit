@@ -1,4 +1,4 @@
-module github.com/charlesgreen/aws-audit
+module github.com/simplycubed/aws-audit
 
 go 1.24
 

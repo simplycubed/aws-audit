@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charlesgreen/aws-audit/internal/awsapi"
-	"github.com/charlesgreen/aws-audit/internal/redact"
-	"github.com/charlesgreen/aws-audit/internal/regions"
-	"github.com/charlesgreen/aws-audit/internal/report"
-	"github.com/charlesgreen/aws-audit/internal/summarize"
+	"github.com/simplycubed/aws-audit/internal/awsapi"
+	"github.com/simplycubed/aws-audit/internal/redact"
+	"github.com/simplycubed/aws-audit/internal/regions"
+	"github.com/simplycubed/aws-audit/internal/report"
+	"github.com/simplycubed/aws-audit/internal/summarize"
 )
 
 const Version = "aws-audit/2.0"

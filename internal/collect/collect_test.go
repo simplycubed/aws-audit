@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charlesgreen/aws-audit/internal/awsapi"
+	"github.com/simplycubed/aws-audit/internal/awsapi"
 )
 
 func testOpts(t *testing.T, fake *awsapi.Fake) Options {
