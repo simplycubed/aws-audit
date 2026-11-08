@@ -28,10 +28,12 @@ func Build(dir string) (*report.Report, error) {
 	r := report.New(account, principal, dir)
 
 	iam(g, r)
+	iamPrivileges(g, r)
 	securityServices(rgn, r)
 	network(rgn, r)
 	s3(g, r)
 	compute(rgn, r)
+	dataPlane(rgn, r)
 	kms(rgn, r)
 	acm(rgn, r)
 	logging(rgn, r)
@@ -286,30 +288,43 @@ func network(rgn string, r *report.Report) {
 					IpRanges   []struct {
 						CidrIp string `json:"CidrIp"`
 					} `json:"IpRanges"`
+					Ipv6Ranges []struct {
+						CidrIpv6 string `json:"CidrIpv6"`
+					} `json:"Ipv6Ranges"`
 				} `json:"IpPermissions"`
 			} `json:"SecurityGroups"`
 		}
 		_ = readJSON(f, &doc)
 		for _, sg := range doc.SecurityGroups {
 			for _, p := range sg.IpPermissions {
+				public := false
 				for _, ip := range p.IpRanges {
 					if ip.CidrIp == "0.0.0.0/0" {
-						from, to := "all", "all"
-						if p.FromPort != nil {
-							from = fmt.Sprintf("%d", *p.FromPort)
-						}
-						if p.ToPort != nil {
-							to = fmt.Sprintf("%d", *p.ToPort)
-						}
-						open = append(open, fmt.Sprintf("%s  %s (%s)  %s %s-%s", region, sg.GroupId, sg.GroupName, p.IpProtocol, from, to))
+						public = true
 					}
 				}
+				for _, ip := range p.Ipv6Ranges {
+					if ip.CidrIpv6 == "::/0" {
+						public = true
+					}
+				}
+				if !public {
+					continue
+				}
+				from, to := "all", "all"
+				if p.FromPort != nil {
+					from = fmt.Sprintf("%d", *p.FromPort)
+				}
+				if p.ToPort != nil {
+					to = fmt.Sprintf("%d", *p.ToPort)
+				}
+				open = append(open, fmt.Sprintf("%s  %s (%s)  %s %s-%s", region, sg.GroupId, sg.GroupName, p.IpProtocol, from, to))
 			}
 		}
 	}
 	if len(open) > 0 {
 		for _, e := range open {
-			r.Note("Security group 0.0.0.0/0 ingress: `" + e + "`")
+			r.Note("Security group public ingress: `" + e + "`")
 		}
 		add(r, "HIGH: Security groups expose ports to the public internet", "Restrict ingress to specific CIDRs; pay special attention to 22 (SSH), 3389 (RDP), 3306, 5432, 1433, 27017, 6379.")
 	}
@@ -355,7 +370,7 @@ func s3(g string, r *report.Report) {
 	if !fullPAB(filepath.Join(g, "s3", "public-access-block.json")) {
 		add(r, "HIGH: Account-level S3 Public Access Block not fully enabled", "Enable all four block settings at the account level via s3control.")
 	}
-	var pub, noPAB, noEnc, noVer, noLog, web []string
+	var pub, pubACL, noPAB, noEnc, noVer, noLog, web []string
 	entries, _ := os.ReadDir(filepath.Join(g, "s3", "buckets"))
 	for _, e := range entries {
 		if !e.IsDir() {
@@ -374,6 +389,9 @@ func s3(g string, r *report.Report) {
 		_ = readJSON(filepath.Join(bd, "policy-status.json"), &ps)
 		if ps.PolicyStatus.IsPublic {
 			pub = append(pub, name)
+		}
+		if aclPublic(filepath.Join(bd, "acl.json")) {
+			pubACL = append(pubACL, name)
 		}
 		var enc struct {
 			ServerSideEncryptionConfiguration struct {
@@ -402,6 +420,9 @@ func s3(g string, r *report.Report) {
 	}
 	if len(pub) > 0 {
 		add(r, "HIGH: S3 buckets resolved as public", strings.Join(pub, ","))
+	}
+	if len(pubACL) > 0 {
+		add(r, "HIGH: S3 bucket ACLs grant access to everyone", strings.Join(pubACL, ",")+" — AllUsers or AuthenticatedUsers can read or write objects even when the bucket policy is private.")
 	}
 	if len(noPAB) > 0 {
 		add(r, "MEDIUM: S3 buckets without full public access block", strings.Join(noPAB, ","))
