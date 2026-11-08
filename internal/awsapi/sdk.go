@@ -53,6 +53,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/securityhub"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/support"
@@ -167,13 +168,17 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "iam.GetAccountAuthorizationDetails":
 		return marshal(iam.NewFromConfig(cfg).GetAccountAuthorizationDetails(ctx, &iam.GetAccountAuthorizationDetailsInput{}))
 	case "iam.ListUsers":
-		return marshal(iam.NewFromConfig(cfg).ListUsers(ctx, &iam.ListUsersInput{}))
+		p := iam.NewListUsersPaginator(iam.NewFromConfig(cfg), &iam.ListUsersInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "iam.ListRoles":
-		return marshal(iam.NewFromConfig(cfg).ListRoles(ctx, &iam.ListRolesInput{}))
+		p := iam.NewListRolesPaginator(iam.NewFromConfig(cfg), &iam.ListRolesInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "iam.ListGroups":
-		return marshal(iam.NewFromConfig(cfg).ListGroups(ctx, &iam.ListGroupsInput{}))
+		p := iam.NewListGroupsPaginator(iam.NewFromConfig(cfg), &iam.ListGroupsInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "iam.ListPolicies":
-		return marshal(iam.NewFromConfig(cfg).ListPolicies(ctx, &iam.ListPoliciesInput{Scope: iamtypes.PolicyScopeTypeLocal}))
+		p := iam.NewListPoliciesPaginator(iam.NewFromConfig(cfg), &iam.ListPoliciesInput{Scope: iamtypes.PolicyScopeTypeLocal})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "iam.ListInstanceProfiles":
 		return marshal(iam.NewFromConfig(cfg).ListInstanceProfiles(ctx, &iam.ListInstanceProfilesInput{}))
 	case "iam.ListSAMLProviders":
@@ -193,9 +198,11 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "iam.ListAccessKeys":
 		return marshal(iam.NewFromConfig(cfg).ListAccessKeys(ctx, &iam.ListAccessKeysInput{UserName: aws.String(in["UserName"])}))
 	case "iam.ListAttachedUserPolicies":
-		return marshal(iam.NewFromConfig(cfg).ListAttachedUserPolicies(ctx, &iam.ListAttachedUserPoliciesInput{UserName: aws.String(in["UserName"])}))
+		p := iam.NewListAttachedUserPoliciesPaginator(iam.NewFromConfig(cfg), &iam.ListAttachedUserPoliciesInput{UserName: aws.String(in["UserName"])})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "iam.ListUserPolicies":
-		return marshal(iam.NewFromConfig(cfg).ListUserPolicies(ctx, &iam.ListUserPoliciesInput{UserName: aws.String(in["UserName"])}))
+		p := iam.NewListUserPoliciesPaginator(iam.NewFromConfig(cfg), &iam.ListUserPoliciesInput{UserName: aws.String(in["UserName"])})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "iam.ListGroupsForUser":
 		return marshal(iam.NewFromConfig(cfg).ListGroupsForUser(ctx, &iam.ListGroupsForUserInput{UserName: aws.String(in["UserName"])}))
 	case "iam.GetAccessKeyLastUsed":
@@ -203,9 +210,11 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "iam.GetRole":
 		return marshal(iam.NewFromConfig(cfg).GetRole(ctx, &iam.GetRoleInput{RoleName: aws.String(in["RoleName"])}))
 	case "iam.ListAttachedRolePolicies":
-		return marshal(iam.NewFromConfig(cfg).ListAttachedRolePolicies(ctx, &iam.ListAttachedRolePoliciesInput{RoleName: aws.String(in["RoleName"])}))
+		p := iam.NewListAttachedRolePoliciesPaginator(iam.NewFromConfig(cfg), &iam.ListAttachedRolePoliciesInput{RoleName: aws.String(in["RoleName"])})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "iam.ListRolePolicies":
-		return marshal(iam.NewFromConfig(cfg).ListRolePolicies(ctx, &iam.ListRolePoliciesInput{RoleName: aws.String(in["RoleName"])}))
+		p := iam.NewListRolePoliciesPaginator(iam.NewFromConfig(cfg), &iam.ListRolePoliciesInput{RoleName: aws.String(in["RoleName"])})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "organizations.DescribeOrganization":
 		return marshal(organizations.NewFromConfig(cfg).DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{}))
 	case "organizations.ListAccounts":
@@ -283,13 +292,17 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "support.DescribeTrustedAdvisorChecks":
 		return marshal(support.NewFromConfig(cfg).DescribeTrustedAdvisorChecks(ctx, &support.DescribeTrustedAdvisorChecksInput{Language: aws.String(in["Language"])}))
 	case "ec2.DescribeInstances":
-		return marshal(ec2.NewFromConfig(cfg).DescribeInstances(ctx, &ec2.DescribeInstancesInput{}))
+		p := ec2.NewDescribeInstancesPaginator(ec2.NewFromConfig(cfg), &ec2.DescribeInstancesInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "ec2.DescribeImages":
-		return marshal(ec2.NewFromConfig(cfg).DescribeImages(ctx, &ec2.DescribeImagesInput{Owners: []string{in["Owners"]}}))
+		p := ec2.NewDescribeImagesPaginator(ec2.NewFromConfig(cfg), &ec2.DescribeImagesInput{Owners: []string{in["Owners"]}})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "ec2.DescribeVolumes":
-		return marshal(ec2.NewFromConfig(cfg).DescribeVolumes(ctx, &ec2.DescribeVolumesInput{}))
+		p := ec2.NewDescribeVolumesPaginator(ec2.NewFromConfig(cfg), &ec2.DescribeVolumesInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "ec2.DescribeSnapshots":
-		return marshal(ec2.NewFromConfig(cfg).DescribeSnapshots(ctx, &ec2.DescribeSnapshotsInput{OwnerIds: []string{in["OwnerIds"]}}))
+		p := ec2.NewDescribeSnapshotsPaginator(ec2.NewFromConfig(cfg), &ec2.DescribeSnapshotsInput{OwnerIds: []string{in["OwnerIds"]}})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "ec2.DescribeKeyPairs":
 		return marshal(ec2.NewFromConfig(cfg).DescribeKeyPairs(ctx, &ec2.DescribeKeyPairsInput{}))
 	case "ec2.DescribeAddresses":
@@ -299,9 +312,19 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "ec2.DescribeLaunchTemplates":
 		return marshal(ec2.NewFromConfig(cfg).DescribeLaunchTemplates(ctx, &ec2.DescribeLaunchTemplatesInput{}))
 	case "ec2.DescribeSecurityGroups":
-		return marshal(ec2.NewFromConfig(cfg).DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{}))
+		p := ec2.NewDescribeSecurityGroupsPaginator(ec2.NewFromConfig(cfg), &ec2.DescribeSecurityGroupsInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "ec2.GetEbsEncryptionByDefault":
 		return marshal(ec2.NewFromConfig(cfg).GetEbsEncryptionByDefault(ctx, &ec2.GetEbsEncryptionByDefaultInput{}))
+	case "ec2.GetSnapshotBlockPublicAccessState":
+		return marshal(ec2.NewFromConfig(cfg).GetSnapshotBlockPublicAccessState(ctx, &ec2.GetSnapshotBlockPublicAccessStateInput{}))
+	case "ec2.GetImageBlockPublicAccessState":
+		return marshal(ec2.NewFromConfig(cfg).GetImageBlockPublicAccessState(ctx, &ec2.GetImageBlockPublicAccessStateInput{}))
+	case "ec2.DescribeSnapshotAttribute":
+		return marshal(ec2.NewFromConfig(cfg).DescribeSnapshotAttribute(ctx, &ec2.DescribeSnapshotAttributeInput{
+			Attribute:  ec2types.SnapshotAttributeNameCreateVolumePermission,
+			SnapshotId: aws.String(in["SnapshotId"]),
+		}))
 	case "ec2.DescribeInstanceTypeOfferings":
 		return marshal(ec2.NewFromConfig(cfg).DescribeInstanceTypeOfferings(ctx, &ec2.DescribeInstanceTypeOfferingsInput{}))
 	case "ec2.DescribeVpcs":
@@ -347,7 +370,13 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "autoscaling.DescribeLaunchConfigurations":
 		return marshal(autoscaling.NewFromConfig(cfg).DescribeLaunchConfigurations(ctx, &autoscaling.DescribeLaunchConfigurationsInput{}))
 	case "lambda.ListFunctions":
-		return marshal(lambda.NewFromConfig(cfg).ListFunctions(ctx, &lambda.ListFunctionsInput{}))
+		p := lambda.NewListFunctionsPaginator(lambda.NewFromConfig(cfg), &lambda.ListFunctionsInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
+	case "lambda.ListFunctionUrlConfigs":
+		p := lambda.NewListFunctionUrlConfigsPaginator(lambda.NewFromConfig(cfg), &lambda.ListFunctionUrlConfigsInput{FunctionName: aws.String(in["FunctionName"])})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
+	case "lambda.GetPolicy":
+		return marshal(lambda.NewFromConfig(cfg).GetPolicy(ctx, &lambda.GetPolicyInput{FunctionName: aws.String(in["FunctionName"])}))
 	case "lambda.ListLayers":
 		return marshal(lambda.NewFromConfig(cfg).ListLayers(ctx, &lambda.ListLayersInput{}))
 	case "lambda.ListEventSourceMappings":
@@ -357,15 +386,26 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "ecs.ListTaskDefinitions":
 		return marshal(ecs.NewFromConfig(cfg).ListTaskDefinitions(ctx, &ecs.ListTaskDefinitionsInput{}))
 	case "eks.ListClusters":
-		return marshal(eks.NewFromConfig(cfg).ListClusters(ctx, &eks.ListClustersInput{}))
+		p := eks.NewListClustersPaginator(eks.NewFromConfig(cfg), &eks.ListClustersInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
+	case "eks.DescribeCluster":
+		return marshal(eks.NewFromConfig(cfg).DescribeCluster(ctx, &eks.DescribeClusterInput{Name: aws.String(in["Name"])}))
 	case "ecr.DescribeRepositories":
-		return marshal(ecr.NewFromConfig(cfg).DescribeRepositories(ctx, &ecr.DescribeRepositoriesInput{}))
+		p := ecr.NewDescribeRepositoriesPaginator(ecr.NewFromConfig(cfg), &ecr.DescribeRepositoriesInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
+	case "ecr.GetRepositoryPolicy":
+		return marshal(ecr.NewFromConfig(cfg).GetRepositoryPolicy(ctx, &ecr.GetRepositoryPolicyInput{RepositoryName: aws.String(in["RepositoryName"])}))
 	case "rds.DescribeDBInstances":
-		return marshal(rds.NewFromConfig(cfg).DescribeDBInstances(ctx, &rds.DescribeDBInstancesInput{}))
+		p := rds.NewDescribeDBInstancesPaginator(rds.NewFromConfig(cfg), &rds.DescribeDBInstancesInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "rds.DescribeDBClusters":
-		return marshal(rds.NewFromConfig(cfg).DescribeDBClusters(ctx, &rds.DescribeDBClustersInput{}))
+		p := rds.NewDescribeDBClustersPaginator(rds.NewFromConfig(cfg), &rds.DescribeDBClustersInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "rds.DescribeDBSnapshots":
-		return marshal(rds.NewFromConfig(cfg).DescribeDBSnapshots(ctx, &rds.DescribeDBSnapshotsInput{}))
+		p := rds.NewDescribeDBSnapshotsPaginator(rds.NewFromConfig(cfg), &rds.DescribeDBSnapshotsInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
+	case "rds.DescribeDBSnapshotAttributes":
+		return marshal(rds.NewFromConfig(cfg).DescribeDBSnapshotAttributes(ctx, &rds.DescribeDBSnapshotAttributesInput{DBSnapshotIdentifier: aws.String(in["DBSnapshotIdentifier"])}))
 	case "rds.DescribeDBClusterSnapshots":
 		return marshal(rds.NewFromConfig(cfg).DescribeDBClusterSnapshots(ctx, &rds.DescribeDBClusterSnapshotsInput{}))
 	case "rds.DescribeDBSubnetGroups":
@@ -373,7 +413,12 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "rds.DescribeDBParameterGroups":
 		return marshal(rds.NewFromConfig(cfg).DescribeDBParameterGroups(ctx, &rds.DescribeDBParameterGroupsInput{}))
 	case "dynamodb.ListTables":
-		return marshal(dynamodb.NewFromConfig(cfg).ListTables(ctx, &dynamodb.ListTablesInput{}))
+		p := dynamodb.NewListTablesPaginator(dynamodb.NewFromConfig(cfg), &dynamodb.ListTablesInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
+	case "dynamodb.DescribeTable":
+		return marshal(dynamodb.NewFromConfig(cfg).DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: aws.String(in["TableName"])}))
+	case "dynamodb.DescribeContinuousBackups":
+		return marshal(dynamodb.NewFromConfig(cfg).DescribeContinuousBackups(ctx, &dynamodb.DescribeContinuousBackupsInput{TableName: aws.String(in["TableName"])}))
 	case "elasticache.DescribeCacheClusters":
 		return marshal(elasticache.NewFromConfig(cfg).DescribeCacheClusters(ctx, &elasticache.DescribeCacheClustersInput{}))
 	case "elasticache.DescribeReplicationGroups":
@@ -382,6 +427,8 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 		return marshal(redshift.NewFromConfig(cfg).DescribeClusters(ctx, &redshift.DescribeClustersInput{}))
 	case "opensearch.ListDomainNames":
 		return marshal(opensearch.NewFromConfig(cfg).ListDomainNames(ctx, &opensearch.ListDomainNamesInput{}))
+	case "opensearch.DescribeDomain":
+		return marshal(opensearch.NewFromConfig(cfg).DescribeDomain(ctx, &opensearch.DescribeDomainInput{DomainName: aws.String(in["DomainName"])}))
 	case "efs.DescribeFileSystems":
 		return marshal(efs.NewFromConfig(cfg).DescribeFileSystems(ctx, &efs.DescribeFileSystemsInput{}))
 	case "fsx.DescribeFileSystems":
@@ -391,9 +438,11 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "backup.ListBackupPlans":
 		return marshal(backup.NewFromConfig(cfg).ListBackupPlans(ctx, &backup.ListBackupPlansInput{}))
 	case "kms.ListKeys":
-		return marshal(kms.NewFromConfig(cfg).ListKeys(ctx, &kms.ListKeysInput{}))
+		p := kms.NewListKeysPaginator(kms.NewFromConfig(cfg), &kms.ListKeysInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "kms.ListAliases":
-		return marshal(kms.NewFromConfig(cfg).ListAliases(ctx, &kms.ListAliasesInput{}))
+		p := kms.NewListAliasesPaginator(kms.NewFromConfig(cfg), &kms.ListAliasesInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "kms.DescribeKey":
 		return marshal(kms.NewFromConfig(cfg).DescribeKey(ctx, &kms.DescribeKeyInput{KeyId: aws.String(in["KeyId"])}))
 	case "kms.GetKeyRotationStatus":
@@ -401,9 +450,11 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "kms.GetKeyPolicy":
 		return marshal(kms.NewFromConfig(cfg).GetKeyPolicy(ctx, &kms.GetKeyPolicyInput{KeyId: aws.String(in["KeyId"]), PolicyName: aws.String(in["PolicyName"])}))
 	case "secretsmanager.ListSecrets":
-		return marshal(secretsmanager.NewFromConfig(cfg).ListSecrets(ctx, &secretsmanager.ListSecretsInput{}))
+		p := secretsmanager.NewListSecretsPaginator(secretsmanager.NewFromConfig(cfg), &secretsmanager.ListSecretsInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "ssm.DescribeParameters":
-		return marshal(ssm.NewFromConfig(cfg).DescribeParameters(ctx, &ssm.DescribeParametersInput{}))
+		p := ssm.NewDescribeParametersPaginator(ssm.NewFromConfig(cfg), &ssm.DescribeParametersInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "ssm.DescribeMaintenanceWindows":
 		return marshal(ssm.NewFromConfig(cfg).DescribeMaintenanceWindows(ctx, &ssm.DescribeMaintenanceWindowsInput{}))
 	case "ssm.DescribePatchBaselines":
@@ -423,7 +474,10 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "config.DescribeDeliveryChannels":
 		return marshal(configservice.NewFromConfig(cfg).DescribeDeliveryChannels(ctx, &configservice.DescribeDeliveryChannelsInput{}))
 	case "guardduty.ListDetectors":
-		return marshal(guardduty.NewFromConfig(cfg).ListDetectors(ctx, &guardduty.ListDetectorsInput{}))
+		p := guardduty.NewListDetectorsPaginator(guardduty.NewFromConfig(cfg), &guardduty.ListDetectorsInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
+	case "guardduty.GetDetector":
+		return marshal(guardduty.NewFromConfig(cfg).GetDetector(ctx, &guardduty.GetDetectorInput{DetectorId: aws.String(in["DetectorId"])}))
 	case "securityhub.DescribeHub":
 		return marshal(securityhub.NewFromConfig(cfg).DescribeHub(ctx, &securityhub.DescribeHubInput{}))
 	case "inspector2.BatchGetAccountStatus":
@@ -435,15 +489,25 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "detective.ListGraphs":
 		return marshal(detective.NewFromConfig(cfg).ListGraphs(ctx, &detective.ListGraphsInput{}))
 	case "logs.DescribeLogGroups":
-		return marshal(cloudwatchlogs.NewFromConfig(cfg).DescribeLogGroups(ctx, &cloudwatchlogs.DescribeLogGroupsInput{}))
+		p := cloudwatchlogs.NewDescribeLogGroupsPaginator(cloudwatchlogs.NewFromConfig(cfg), &cloudwatchlogs.DescribeLogGroupsInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	case "logs.DescribeMetricFilters":
 		return marshal(cloudwatchlogs.NewFromConfig(cfg).DescribeMetricFilters(ctx, &cloudwatchlogs.DescribeMetricFiltersInput{}))
 	case "logs.DescribeDestinations":
 		return marshal(cloudwatchlogs.NewFromConfig(cfg).DescribeDestinations(ctx, &cloudwatchlogs.DescribeDestinationsInput{}))
 	case "sns.ListTopics":
-		return marshal(sns.NewFromConfig(cfg).ListTopics(ctx, &sns.ListTopicsInput{}))
+		p := sns.NewListTopicsPaginator(sns.NewFromConfig(cfg), &sns.ListTopicsInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
+	case "sns.GetTopicAttributes":
+		return marshal(sns.NewFromConfig(cfg).GetTopicAttributes(ctx, &sns.GetTopicAttributesInput{TopicArn: aws.String(in["TopicArn"])}))
 	case "sqs.ListQueues":
-		return marshal(sqs.NewFromConfig(cfg).ListQueues(ctx, &sqs.ListQueuesInput{}))
+		p := sqs.NewListQueuesPaginator(sqs.NewFromConfig(cfg), &sqs.ListQueuesInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
+	case "sqs.GetQueueAttributes":
+		return marshal(sqs.NewFromConfig(cfg).GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       aws.String(in["QueueUrl"]),
+			AttributeNames: []sqstypes.QueueAttributeName{sqstypes.QueueAttributeNamePolicy},
+		}))
 	case "events.ListEventBuses":
 		return marshal(eventbridge.NewFromConfig(cfg).ListEventBuses(ctx, &eventbridge.ListEventBusesInput{}))
 	case "events.ListRules":
@@ -459,7 +523,8 @@ func (s *SDK) Dump(ctx context.Context, req Dump) (json.RawMessage, error) {
 	case "acm.DescribeCertificate":
 		return marshal(acm.NewFromConfig(cfg).DescribeCertificate(ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(in["CertificateArn"])}))
 	case "resourcegroupstaggingapi.GetResources":
-		return marshal(resourcegroupstaggingapi.NewFromConfig(cfg).GetResources(ctx, &resourcegroupstaggingapi.GetResourcesInput{}))
+		p := resourcegroupstaggingapi.NewGetResourcesPaginator(resourcegroupstaggingapi.NewFromConfig(cfg), &resourcegroupstaggingapi.GetResourcesInput{})
+		return paged(ctx, p.HasMorePages, func(ctx context.Context) (any, error) { return p.NextPage(ctx) })
 	default:
 		return nil, fmt.Errorf("unmapped AWS operation %s", key)
 	}
