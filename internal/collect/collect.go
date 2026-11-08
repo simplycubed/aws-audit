@@ -339,7 +339,7 @@ func (c *collector) auditRegion(ctx context.Context, region string) {
 	d("ec2/instances.json", "ec2", "DescribeInstances", nil)
 	d("ec2/images-owned.json", "ec2", "DescribeImages", map[string]string{"Owners": "self"})
 	d("ec2/volumes.json", "ec2", "DescribeVolumes", nil)
-	d("ec2/snapshots-owned.json", "ec2", "DescribeSnapshots", map[string]string{"OwnerIds": "self"})
+	snaps := d("ec2/snapshots-owned.json", "ec2", "DescribeSnapshots", map[string]string{"OwnerIds": "self"})
 	d("ec2/key-pairs.json", "ec2", "DescribeKeyPairs", nil)
 	d("ec2/elastic-ips.json", "ec2", "DescribeAddresses", nil)
 	d("ec2/network-interfaces.json", "ec2", "DescribeNetworkInterfaces", nil)
@@ -368,24 +368,24 @@ func (c *collector) auditRegion(ctx context.Context, region string) {
 	d("elb/target-groups.json", "elbv2", "DescribeTargetGroups", nil)
 	d("autoscaling/groups.json", "autoscaling", "DescribeAutoScalingGroups", nil)
 	d("autoscaling/launch-configurations.json", "autoscaling", "DescribeLaunchConfigurations", nil)
-	d("lambda/functions.json", "lambda", "ListFunctions", nil)
+	funcs := d("lambda/functions.json", "lambda", "ListFunctions", nil)
 	d("lambda/layers.json", "lambda", "ListLayers", nil)
 	d("lambda/event-source-mappings.json", "lambda", "ListEventSourceMappings", nil)
 	d("ecs/clusters.json", "ecs", "ListClusters", nil)
 	d("ecs/task-definitions.json", "ecs", "ListTaskDefinitions", nil)
-	d("eks/clusters.json", "eks", "ListClusters", nil)
-	d("ecr/repositories.json", "ecr", "DescribeRepositories", nil)
+	eksClusters := d("eks/clusters.json", "eks", "ListClusters", nil)
+	repos := d("ecr/repositories.json", "ecr", "DescribeRepositories", nil)
 	d("rds/instances.json", "rds", "DescribeDBInstances", nil)
 	d("rds/clusters.json", "rds", "DescribeDBClusters", nil)
-	d("rds/snapshots.json", "rds", "DescribeDBSnapshots", nil)
+	dbSnaps := d("rds/snapshots.json", "rds", "DescribeDBSnapshots", nil)
 	d("rds/cluster-snapshots.json", "rds", "DescribeDBClusterSnapshots", nil)
 	d("rds/subnet-groups.json", "rds", "DescribeDBSubnetGroups", nil)
 	d("rds/parameter-groups.json", "rds", "DescribeDBParameterGroups", nil)
-	d("dynamodb/tables.json", "dynamodb", "ListTables", nil)
+	tables := d("dynamodb/tables.json", "dynamodb", "ListTables", nil)
 	d("elasticache/clusters.json", "elasticache", "DescribeCacheClusters", nil)
 	d("elasticache/replication-groups.json", "elasticache", "DescribeReplicationGroups", nil)
 	d("redshift/clusters.json", "redshift", "DescribeClusters", nil)
-	d("opensearch/domains.json", "opensearch", "ListDomainNames", nil)
+	domains := d("opensearch/domains.json", "opensearch", "ListDomainNames", nil)
 	d("efs/file-systems.json", "efs", "DescribeFileSystems", nil)
 	d("fsx/file-systems.json", "fsx", "DescribeFileSystems", nil)
 	d("backup/vaults.json", "backup", "ListBackupVaults", nil)
@@ -407,7 +407,7 @@ func (c *collector) auditRegion(ctx context.Context, region string) {
 	d("security/config-recorders.json", "config", "DescribeConfigurationRecorders", nil)
 	d("security/config-recorder-status.json", "config", "DescribeConfigurationRecorderStatus", nil)
 	d("security/config-delivery-channels.json", "config", "DescribeDeliveryChannels", nil)
-	d("security/guardduty-detectors.json", "guardduty", "ListDetectors", nil)
+	detectors := d("security/guardduty-detectors.json", "guardduty", "ListDetectors", nil)
 	d("security/securityhub-hub.json", "securityhub", "DescribeHub", nil)
 	d("security/inspector2-status.json", "inspector2", "BatchGetAccountStatus", map[string]string{"AccountIds": c.account})
 	d("security/macie-session.json", "macie2", "GetMacieSession", nil)
@@ -420,8 +420,8 @@ func (c *collector) auditRegion(ctx context.Context, region string) {
 	d("logs/log-groups.json", "logs", "DescribeLogGroups", nil)
 	d("logs/metric-filters.json", "logs", "DescribeMetricFilters", nil)
 	d("logs/destinations.json", "logs", "DescribeDestinations", nil)
-	d("sns/topics.json", "sns", "ListTopics", nil)
-	d("sqs/queues.json", "sqs", "ListQueues", nil)
+	topics := d("sns/topics.json", "sns", "ListTopics", nil)
+	queues := d("sqs/queues.json", "sqs", "ListQueues", nil)
 	d("events/event-buses.json", "events", "ListEventBuses", nil)
 	d("events/rules.json", "events", "ListRules", nil)
 	d("apigw/rest-apis.json", "apigateway", "GetRestApis", nil)
@@ -438,6 +438,61 @@ func (c *collector) auditRegion(ctx context.Context, region string) {
 	d("waf/web-acls.json", "wafv2", "ListWebACLs", map[string]string{"Scope": "REGIONAL"})
 	d("waf/ip-sets.json", "wafv2", "ListIPSets", map[string]string{"Scope": "REGIONAL"})
 	d("tags/resources.json", "resourcegroupstaggingapi", "GetResources", nil)
+
+	d("ec2/snapshot-block-public-access.json", "ec2", "GetSnapshotBlockPublicAccessState", nil)
+	d("ec2/image-block-public-access.json", "ec2", "GetImageBlockPublicAccessState", nil)
+	for _, id := range fieldList(snaps, "Snapshots", "SnapshotId") {
+		d("ec2/snapshots/"+sanitize(id)+"-attributes.json", "ec2", "DescribeSnapshotAttribute", map[string]string{"SnapshotId": id})
+	}
+	for _, id := range fieldList(dbSnaps, "DBSnapshots", "DBSnapshotIdentifier") {
+		d("rds/snapshots/"+sanitize(id)+"-attributes.json", "rds", "DescribeDBSnapshotAttributes", map[string]string{"DBSnapshotIdentifier": id})
+	}
+	for _, name := range stringList(eksClusters, "Clusters") {
+		d("eks/clusters/"+sanitize(name)+".json", "eks", "DescribeCluster", map[string]string{"Name": name})
+	}
+	for _, name := range fieldList(funcs, "Functions", "FunctionName") {
+		in := map[string]string{"FunctionName": name}
+		d("lambda/functions/"+sanitize(name)+"-url-configs.json", "lambda", "ListFunctionUrlConfigs", in)
+		d("lambda/functions/"+sanitize(name)+"-policy.json", "lambda", "GetPolicy", in)
+	}
+	for _, queueURL := range stringList(queues, "QueueUrls") {
+		d("sqs/queues/"+sanitize(queueURL)+"-attributes.json", "sqs", "GetQueueAttributes", map[string]string{"QueueUrl": queueURL})
+	}
+	for _, arn := range fieldList(topics, "Topics", "TopicArn") {
+		d("sns/topics/"+sanitize(arn)+"-attributes.json", "sns", "GetTopicAttributes", map[string]string{"TopicArn": arn})
+	}
+	for _, name := range fieldList(repos, "Repositories", "RepositoryName") {
+		d("ecr/repositories/"+sanitize(name)+"-policy.json", "ecr", "GetRepositoryPolicy", map[string]string{"RepositoryName": name})
+	}
+	for _, name := range stringList(tables, "TableNames") {
+		in := map[string]string{"TableName": name}
+		d("dynamodb/tables/"+sanitize(name)+".json", "dynamodb", "DescribeTable", in)
+		d("dynamodb/tables/"+sanitize(name)+"-continuous-backups.json", "dynamodb", "DescribeContinuousBackups", in)
+	}
+	for _, name := range fieldList(domains, "DomainNames", "DomainName") {
+		d("opensearch/domains/"+sanitize(name)+".json", "opensearch", "DescribeDomain", map[string]string{"DomainName": name})
+	}
+	for _, id := range stringList(detectors, "DetectorIds") {
+		d("security/guardduty/"+sanitize(id)+".json", "guardduty", "GetDetector", map[string]string{"DetectorId": id})
+	}
+}
+
+func stringList(raw json.RawMessage, array string) []string {
+	var doc map[string]json.RawMessage
+	if json.Unmarshal(raw, &doc) != nil {
+		return nil
+	}
+	var arr []string
+	if json.Unmarshal(doc[array], &arr) != nil {
+		return nil
+	}
+	var out []string
+	for _, s := range arr {
+		if s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 func fieldList(raw json.RawMessage, array, field string) []string {

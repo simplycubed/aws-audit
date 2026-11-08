@@ -34,6 +34,7 @@ func Build(dir string) (*report.Report, error) {
 	s3(g, r)
 	compute(rgn, r)
 	dataPlane(rgn, r)
+	resourceFindings(rgn, r)
 	kms(rgn, r)
 	acm(rgn, r)
 	logging(rgn, r)

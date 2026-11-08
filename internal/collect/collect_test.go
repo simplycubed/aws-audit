@@ -148,6 +148,70 @@ func TestSummaryReportsGenerated(t *testing.T) {
 	}
 }
 
+func TestPerResourceReadsFollowListIds(t *testing.T) {
+	const region = "eu-west-1"
+	fake := &awsapi.Fake{
+		Bodies: map[string]json.RawMessage{
+			region + "|ec2|DescribeSnapshots":      json.RawMessage(`{"Snapshots":[{"SnapshotId":"snap-1"},{"SnapshotId":""}]}`),
+			region + "|rds|DescribeDBSnapshots":    json.RawMessage(`{"DBSnapshots":[{"DBSnapshotIdentifier":"db-snap"}]}`),
+			region + "|eks|ListClusters":           json.RawMessage(`{"Clusters":["prod"]}`),
+			region + "|lambda|ListFunctions":       json.RawMessage(`{"Functions":[{"FunctionName":"fn"}]}`),
+			region + "|sqs|ListQueues":             json.RawMessage(`{"QueueUrls":["https://sqs.eu-west-1.amazonaws.com/123/q"]}`),
+			region + "|sns|ListTopics":             json.RawMessage(`{"Topics":[{"TopicArn":"arn:aws:sns:eu-west-1:123:t"}]}`),
+			region + "|ecr|DescribeRepositories":   json.RawMessage(`{"Repositories":[{"RepositoryName":"app"}]}`),
+			region + "|dynamodb|ListTables":        json.RawMessage(`{"TableNames":["orders"]}`),
+			region + "|opensearch|ListDomainNames": json.RawMessage(`{"DomainNames":[{"DomainName":"logs"}]}`),
+			region + "|guardduty|ListDetectors":    json.RawMessage(`{"DetectorIds":["det-1"]}`),
+			region + "|ec2|DescribeInstances":      json.RawMessage(`{}`),
+		},
+	}
+	opts := testOpts(t, fake)
+	opts.RequestedCSV = region
+	if err := Run(context.Background(), opts); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]map[string]string{
+		"ec2|DescribeSnapshotAttribute":         {"SnapshotId": "snap-1"},
+		"ec2|GetSnapshotBlockPublicAccessState": nil,
+		"ec2|GetImageBlockPublicAccessState":    nil,
+		"rds|DescribeDBSnapshotAttributes":      {"DBSnapshotIdentifier": "db-snap"},
+		"eks|DescribeCluster":                   {"Name": "prod"},
+		"lambda|ListFunctionUrlConfigs":         {"FunctionName": "fn"},
+		"lambda|GetPolicy":                      {"FunctionName": "fn"},
+		"sqs|GetQueueAttributes":                {"QueueUrl": "https://sqs.eu-west-1.amazonaws.com/123/q"},
+		"sns|GetTopicAttributes":                {"TopicArn": "arn:aws:sns:eu-west-1:123:t"},
+		"ecr|GetRepositoryPolicy":               {"RepositoryName": "app"},
+		"dynamodb|DescribeTable":                {"TableName": "orders"},
+		"dynamodb|DescribeContinuousBackups":    {"TableName": "orders"},
+		"opensearch|DescribeDomain":             {"DomainName": "logs"},
+		"guardduty|GetDetector":                 {"DetectorId": "det-1"},
+	}
+	got := map[string]int{}
+	for _, c := range fake.Calls {
+		if c.Region != region {
+			continue
+		}
+		k := c.Service + "|" + c.Operation
+		if _, ok := want[k]; !ok {
+			continue
+		}
+		got[k]++
+		for key, val := range want[k] {
+			if c.Input[key] != val {
+				t.Errorf("%s input %s=%q want %q", k, key, c.Input[key], val)
+			}
+		}
+	}
+	for k := range want {
+		if got[k] != 1 {
+			t.Errorf("%s calls=%d", k, got[k])
+		}
+	}
+	if _, err := os.Stat(filepath.Join(opts.OutDir, "regions", region, "ec2", "snapshots", "snap-1-attributes.json")); err != nil {
+		t.Fatal(err)
+	}
+}
+
 type fmtErr string
 
 func (e fmtErr) Error() string { return string(e) }
